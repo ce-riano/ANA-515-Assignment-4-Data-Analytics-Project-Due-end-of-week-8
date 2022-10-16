@@ -1,0 +1,194 @@
+---
+title: "ANA 515 - Assignment 4 Data Analytics Project"
+author: "Cesar Riano"
+date: "2022-10-16"
+output: html_document 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## section 1: Discuss the business problem/goal 
+
+The business problem of the current project centers around Uber Pickups in New York City. The goal is to use the data set in order to understand the customers who avail the trips in uber.
+
+```{r, include = TRUE}
+
+#load packages
+library(ggplot2)
+library(ggthemes)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(DT)
+library(scales)
+
+
+#Create a vector of colors
+#colors = c(""#CC1011", "#665555", "#05a399", "#cfcaca", "#f5e840", "#0683c9", "#e075b0"")
+
+```
+
+## Section 2: Identify where the dataset was retrieved from
+
+The data set comes from data on uber rides in new york city collected from April 2014 to September 2014. The owners of the study don't specify much further on how/where they got the data from. I'm assuming that it was released by uber given that is old data.
+
+## Section 3: Identify the code that imported and saved your dataset in R
+
+```{r abs-dist, echo = TRUE}
+# this is the code that imported and saved your dataset in R:
+
+apr_data <- read.csv("uber-raw-data-apr14.csv")
+may_data <- read.csv("uber-raw-data-may14.csv")
+jun_data <- read.csv("uber-raw-data-jun14.csv")
+jul_data <- read.csv("uber-raw-data-jul14.csv")
+aug_data <- read.csv("uber-raw-data-aug14.csv")
+sep_data <- read.csv("uber-raw-data-sep14.csv")
+```
+
+## Section 4: Describe your data set (using the common attributes such as #rows, #columns, variable names, types, means, SD, min/max, NAs, etc...) 
+
+```{r grade-dist, echo = TRUE}
+data_2014 <- rbind(apr_data,may_data, jun_data, jul_data, aug_data, sep_data)
+nrow(data_2014)
+ncol(data_2014)
+
+#The data set has 4534327 rows and 9 columns
+
+```
+
+## Section 5: Discuss any data preparation, missing values and errors (10 points) (if the dataset was clean and there is no prep in the code, include a comment that explains what likely data preparation was done. What are the common issues with raw data?
+
+Even though they imported the data sets in raw format, and don't specified much data cleaning, they did prepare the data by formatting of Date.Time column. Then, they proceeded to create factors of time objects like day, month, year etc. 
+
+Added after finishing the analysis: Upon completion of the project I found that there were in fact 71701 rows containing missing values, which produced errors in certain visualizations. Illustrating the point of why data cleaning and proper preparation is importnat. Dealing with missing values can damage the analysis or produce odd results that are perhaps not representative of the real story within the data.
+
+```{r, echo = FALSE}
+# Formating of the data set
+
+data_2014 <- rbind(apr_data,may_data, jun_data, jul_data, aug_data, sep_data)
+data_2014$Date.Time <- as.POSIXct(data_2014$Date.Time, format = "%m/%d/%Y %H:%M:%S")
+data_2014$Time <- format(as.POSIXct(data_2014$Date.Time, format = "%m/%d/%Y %H:%M:%S"), format="%H:%M:%S")
+data_2014$Date.Time <- ymd_hms(data_2014$Date.Time)
+data_2014$day <- factor(day(data_2014$Date.Time))
+data_2014$month <- factor(month(data_2014$Date.Time, label = TRUE))
+data_2014$year <- factor(year(data_2014$Date.Time))
+data_2014$dayofweek <- factor(wday(data_2014$Date.Time, label = TRUE))
+
+
+data_2014$hour <- factor(hour(hms(data_2014$Time)))
+data_2014$minute <- factor(minute(hms(data_2014$Time)))
+data_2014$second <- factor(second(hms(data_2014$Time)))
+
+```
+
+## Section 6: Discuss the modeling 
+
+In order to understand the costumers behavior using uber they carried this project more in a data visualization way.
+
+" This is more of a data visualization project that will guide you towards using the ggplot2 library for understanding the data and for developing an intuition for understanding the customers who avail the trips."
+
+  https://data-flair.training/blogs/r-data-science-project-uber-data-analysis/
+
+They used the ggplot function to plot the number of trips that the passengers had made in a day. Also, use dplyr to aggregate the data. In the resulting visualizations, we can understand how the number of passengers fares throughout the day. they observed that the number of trips are higher in the evening around 5:00 and 6:00 PM.
+
+## Section 7 and 8: Produce output and visuals
+
+```{r, echo = TRUE}
+# Plotting the trips by the hours in a day
+
+# Table of hours and trips
+hour_data <- data_2014 %>%
+           group_by(hour) %>%
+               dplyr::summarize(Total = n()) 
+datatable(hour_data)
+
+# ggplot
+ggplot(hour_data, aes(hour, Total)) + 
+        geom_bar( stat = "identity", fill = "steelblue", color = "red") +
+           ggtitle("Trips Every Hour") +
+            theme(legend.position = "none") +
+            scale_y_continuous(labels = comma)
+month_hour <- data_2014 %>%
+          group_by(month, hour) %>%
+             dplyr::summarize(Total = n())
+ggplot(month_hour, aes(hour, Total, fill = month)) + 
+       geom_bar( stat = "identity") +
+          ggtitle("Trips by Hour and Month") +
+           scale_y_continuous(labels = comma)
+
+```
+
+```{r, echo = TRUE}
+# Plotting data by trips during every day of the month
+
+day_group <- data_2014 %>%
+          group_by(day) %>%
+             dplyr::summarize(Total = n()) 
+datatable(day_group)
+
+```
+
+```{r, echo = TRUE}
+# what's in here?
+
+ggplot(day_group, aes(day, Total)) + 
+        geom_bar( stat = "identity", fill = "steelblue") +
+           ggtitle("Trips Every Day") +
+            theme(legend.position = "none") +
+            scale_y_continuous(labels = comma)
+
+```
+
+```{r, echo = TRUE}
+# Number of Trips taking place during months in a year
+
+month_group <- data_2014 %>%
+          group_by(month) %>%
+             dplyr::summarize(Total = n()) 
+datatable(month_group)
+
+```
+
+```{r, echo = TRUE}
+# Creating a Heatmap visualization of day, hour and month
+
+#table
+day_and_hour <- data_2014 %>%
+         group_by(day, hour) %>%
+            dplyr::summarize(Total = n())
+datatable(day_and_hour)
+
+#Heatmap
+ggplot(day_and_hour, aes(day, hour, fill = Total)) +
+            geom_tile(color = "white") +
+              ggtitle("Heat Map by Hour and Day")
+```
+
+```{r, echo = TRUE}
+# visualize the rides in New York city by creating a geo-plot that will help us to visualize the rides during 2014 (Apr – Sep) and by the bases in the same period.
+
+min_lat <- 40.5774
+max_lat <- 40.9176
+min_long <- -74.15
+max_long <- -73.7004
+ggplot(data_2014, aes(x=Lon, y=Lat)) +
+  geom_point(size=1, color = "blue") +
+     scale_x_continuous(limits=c(min_long, max_long)) +
+      scale_y_continuous(limits=c(min_lat, max_lat)) +
+        theme_map() +
+           ggtitle("NYC MAP BASED ON UBER RIDES DURING 2014 (APR-SEP)")
+ggplot(data_2014, aes(x=Lon, y=Lat, color = Base)) +
+  geom_point(size=1) +
+     scale_x_continuous(limits=c(min_long, max_long)) +
+      scale_y_continuous(limits=c(min_lat, max_lat)) +
+       theme_map() +
+          ggtitle("NYC MAP BASED ON UBER RIDES DURING 2014 (APR-SEP) by BASE")
+
+```
+
+## Section 9: Your document should clearly and concisely communicate the project  
+
+In this Uber data analysis R project, they observed how to create data visualizations and used several packages such as ggplot2 to plot various types of visualizations that pertained to several time-frames of the year. That allowed them to conclude how time affected customer trips in Uber. Finally, the geo plot of New York that provided the details of how various users made trips from different base points.
+
